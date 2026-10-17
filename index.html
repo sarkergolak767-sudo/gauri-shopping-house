@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>গৌরী শপিং হাউজ - Gauri Shopping House</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans pb-20 select-none">
+
+    <!-- Auth Gate -->
+    <div id="auth-gate-modal" class="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-amber-500/20">
+            <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 text-center border-b border-amber-500/30">
+                <div class="w-20 h-20 mx-auto mb-3 rounded-full bg-slate-900 border-2 border-amber-400 p-1 flex items-center justify-center">
+                    <i class="fa-solid fa-crown text-3xl text-amber-400"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-amber-400 font-serif">গৌরী শপিং হাউজ</h2>
+                <p class="text-[10px] text-gray-300 mt-1">কেনাকাটা করতে লগইন করুন</p>
+            </div>
+            <div class="p-5">
+                <form onsubmit="handleCustomerLogin(event)" class="space-y-3">
+                    <input type="text" id="cust-name" placeholder="আপনার নাম" required class="w-full p-2.5 border rounded-xl text-xs">
+                    <input type="tel" id="cust-phone" placeholder="মোবাইল নম্বর" required class="w-full p-2.5 border rounded-xl text-xs">
+                    <button type="submit" class="w-full bg-slate-950 text-amber-400 font-bold py-2.5 rounded-xl text-xs">প্রবেশ করুন</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="blur-sm pointer-events-none transition">
+        <header class="bg-slate-900 text-white sticky top-0 z-50 p-3 flex justify-between items-center border-b border-amber-500/20">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-crown text-amber-400 text-sm"></i>
+                <h1 class="text-sm font-bold text-amber-400 font-serif">গৌরী শপিং হাউজ</h1>
+            </div>
+            <button onclick="switchTab('cart')" class="relative text-amber-400 p-1">
+                <i class="fa-solid fa-cart-shopping text-base"></i>
+                <span id="cart-count" class="absolute -top-1 -right-1 bg-amber-400 text-slate-950 font-bold text-[9px] rounded-full h-4 w-4 flex items-center justify-center">0</span>
+            </button>
+        </header>
+
+        <main class="p-3 max-w-md mx-auto">
+            <!-- Shop View -->
+            <section id="view-home" class="tab-content">
+                <div class="bg-slate-900 text-white p-4 rounded-2xl mb-4 border border-amber-500/30">
+                    <h2 class="text-base font-bold text-amber-300 font-serif">স্বাগতম!</h2>
+                    <p class="text-[11px] text-gray-300">সেরা মূল্যে আপনার পছন্দের পণ্য অর্ডার করুন।</p>
+                </div>
+                <div id="product-list" class="grid grid-cols-2 gap-3"></div>
+            </section>
+
+            <!-- Cart View -->
+            <section id="view-cart" class="tab-content hidden">
+                <h2 class="text-sm font-bold mb-3 border-l-4 border-amber-500 pl-2">শপিং কার্ট</h2>
+                <div id="cart-items-container" class="space-y-2 mb-3"></div>
+                <div id="cart-summary" class="bg-white p-3 rounded-xl shadow border hidden">
+                    <div class="flex justify-between mb-2 text-xs font-bold">
+                        <span>মোট:</span>
+                        <span id="cart-total" class="text-amber-600">৳0</span>
+                    </div>
+                    <textarea id="order-address" placeholder="আপনার পূর্ণাঙ্গ ঠিকানা (গ্রাম, থানা, জেলা)" class="w-full mb-2 p-2 border rounded-lg text-xs" rows="2"></textarea>
+                    <button onclick="checkoutWhatsApp()" class="w-full bg-green-600 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center space-x-2">
+                        <i class="fa-brands fa-whatsapp text-sm"></i>
+                        <span>হোয়াটসঅ্যাপে অর্ডার পাঠান</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <nav class="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-amber-500/20 flex justify-around py-2.5">
+            <button onclick="switchTab('home')" class="text-amber-400 text-xs"><i class="fa-solid fa-house"></i> হোম</button>
+            <button onclick="switchTab('cart')" class="text-gray-400 text-xs"><i class="fa-solid fa-cart-shopping"></i> কার্ট</button>
+        </nav>
+    </div>
+
+    <script>
+        const SHOP_PHONE = "8801818603733";
+        let products = JSON.parse(localStorage.getItem('g_products')) || [
+            { id: 1, name: "প্রিমিয়াম ম্যানস শার্ট", price: 950, img: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=300" },
+            { id: 2, name: "স্মার্ট ওয়াচ আল্ট্রা", price: 1450, img: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300" }
+        ];
+        let cart = [];
+        let currentUser = JSON.parse(localStorage.getItem('g_cust')) || null;
+
+        window.onload = () => { if(currentUser) unlockCust(); renderProducts(); };
+
+        function handleCustomerLogin(e) {
+            e.preventDefault();
+            currentUser = {
+                name: document.getElementById('cust-name').value,
+                phone: document.getElementById('cust-phone').value
+            };
+            localStorage.setItem('g_cust', JSON.stringify(currentUser));
+            
+            // Save to shared members list for admin
+            let members = JSON.parse(localStorage.getItem('g_members')) || [];
+            if(!members.some(m => m.phone === currentUser.phone)) {
+                members.push({ name: currentUser.name, phone: currentUser.phone, type: "Customer" });
+                localStorage.setItem('g_members', JSON.stringify(members));
+            }
+            unlockCust();
+        }
+
+        function unlockCust() {
+            document.getElementById('auth-gate-modal').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('blur-sm', 'pointer-events-none');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+        }
+
+        function renderProducts() {
+            document.getElementById('product-list').innerHTML = products.map(p => `
+                <div class="bg-white rounded-xl shadow border p-2 flex flex-col justify-between">
+                    <img src="${p.img}" class="w-full h-28 object-cover rounded-lg">
+                    <h4 class="font-bold text-xs mt-1 truncate">${p.name}</h4>
+                    <div class="text-amber-600 font-bold text-xs my-1">৳${p.price}</div>
+                    <button onclick="addToCart(${p.id})" class="w-full bg-slate-900 text-amber-400 font-bold py-1.5 rounded-lg text-[10px]">কার্টে যোগ করুন</button>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(id) {
+            const item = products.find(p => p.id === id);
+            const exist = cart.find(c => c.id === id);
+            if(exist) exist.qty++; else cart.push({ ...item, qty: 1 });
+            updateCart();
+            alert('কার্টে যুক্ত হয়েছে!');
+        }
+
+        function updateCart() {
+            document.getElementById('cart-count').innerText = cart.reduce((a, b) => a + b.qty, 0);
+            const container = document.getElementById('cart-items-container');
+            const summary = document.getElementById('cart-summary');
+            if(cart.length === 0) { container.innerHTML = `<p class="text-center text-xs text-gray-400 my-4">কার্ট খালি</p>`; summary.classList.add('hidden'); return; }
+            summary.classList.remove('hidden');
+            let total = 0;
+            container.innerHTML = cart.map(i => {
+                total += i.price * i.qty;
+                return `<div class="flex justify-between items-center bg-gray-50 p-2 rounded border text-xs"><span>${i.name} (${i.qty}x)</span><span class="font-bold text-amber-600">৳${i.price * i.qty}</span></div>`;
+            }).join('');
+            document.getElementById('cart-total').innerText = `৳${total}`;
+        }
+
+        function checkoutWhatsApp() {
+            const address = document.getElementById('order-address').value;
+            if(!address) { alert('দয়া করে ঠিকানা লিখুন।'); return; }
+            let text = `*নতুন অর্ডার - গৌরী শপিং হাউজ*\nনাম: ${currentUser.name}\nফোন: ${currentUser.phone}\nঠিকানা: ${address}\n\nপণ্য:\n`;
+            let total = 0;
+            cart.forEach(i => { text += `- ${i.name} (${i.qty}টি) = ৳${i.price * i.qty}\n`; total += i.price * i.qty; });
+            text += `\nসর্বমোট: ৳${total}`;
+            window.open(`https://wa.me/${SHOP_PHONE}?text=${encodeURIComponent(text)}`, '_blank');
+        }
+    </script>
+</body>
+</html>
